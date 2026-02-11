@@ -321,7 +321,7 @@
                 return `
                 <div class="pecs-card bg-white rounded-xl overflow-hidden flex flex-col shadow-sm ${border}" style="height: 160px;" onclick="addToStrip('${c.id}')">
                     <div class="edit-trigger" onclick="event.stopPropagation(); openEditModal('${c.id}')"><i class="fas fa-ellipsis-h text-gray-500"></i></div>
-                    <div class="h-28 w-full bg-gray-100 overflow-hidden"><img src="${c.image}" class="w-full h-full object-cover"></div>
+                    <div class="h-28 w-full bg-white overflow-hidden flex items-center justify-center p-1"><img src="${c.image}" class="max-w-full max-h-full object-contain"></div>
                     <div class="flex-1 flex items-center justify-center bg-white p-1">
                         <span class="text-sm font-bold text-center leading-tight line-clamp-2">${c.label}</span>
                     </div>
@@ -350,7 +350,9 @@
                 el.id = `strip-card-${i}`;
                 el.onclick = () => removeFromStrip(i);
                 el.innerHTML = `
-                    <img src="${card.image}" class="w-full h-16 object-contain mt-1">
+                    <div class="w-full h-16 bg-white flex items-center justify-center p-1">
+                        <img src="${card.image}" class="max-w-full max-h-full object-contain">
+                    </div>
                     <div class="text-[10px] font-bold text-center p-1 truncate bg-gray-50">${card.label}</div>
                 `;
                 strip.appendChild(el);
