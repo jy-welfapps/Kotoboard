@@ -245,21 +245,76 @@
 
         function initDefaults() {
             categories = [
-                {id: 'cat_predicate', label: 'おねがい'},
-                {id: 'cat_person', label: 'ひと'},
-                {id: 'cat_action', label: 'どうさ'},
-                {id: 'cat_food', label: 'たべもの'},
-                {id: 'cat_color', label: 'いろ'}
+                {id: 'cat_predicate', label: 'おねがい・いしひょうじ'},
+                {id: 'cat_food', label: 'たべもの・のみもの'},
+                {id: 'cat_toy', label: 'あそび・おもちゃ'},
+                {id: 'cat_life', label: 'せいかつ'},
+                {id: 'cat_action', label: 'どうさ・ばしょ'},
+                {id: 'cat_person', label: 'ひと・きもち'}
             ];
-            // 初期データ：Talkプロパティを明確にひらがなで定義
+            // 初期データ：包括的なPECSカードセット
             const samples = [
+                // 【要求・拒否】基本的な意思表示
                 { l: '〜をください', t: 'をください', c: 'cat_predicate', i: '🤲', bg: '#FFFBEB' },
-                { l: '〜がほしい', t: 'がほしいです', c: 'cat_predicate', i: '✨', bg: '#FFFBEB' },
+                { l: 'おしまい', t: 'おしまい', c: 'cat_predicate', i: '🚫', bg: '#FFFBEB' },
+                { l: 'まだ', t: 'まだ', c: 'cat_predicate', i: '➕', bg: '#FFFBEB' },
+                { l: '手伝ってください', t: 'てつだってください', c: 'cat_predicate', i: '🙋', bg: '#FFFBEB' },
+                { l: '貸して', t: 'かして', c: 'cat_predicate', i: '🤝', bg: '#FFFBEB' },
+                { l: '休憩する', t: 'きゅうけいする', c: 'cat_predicate', i: '😌', bg: '#FFFBEB' },
+                { l: 'はい', t: 'はい', c: 'cat_predicate', i: '⭕', bg: '#FFFBEB' },
+                { l: 'いいえ', t: 'いいえ', c: 'cat_predicate', i: '❌', bg: '#FFFBEB' },
+                
+                // 【食べ物・飲み物】
                 { l: 'おやつ', t: 'おやつ', c: 'cat_food', i: '🍪', bg: '#FFFFFF' },
                 { l: 'ごはん', t: 'ごはん', c: 'cat_food', i: '🍚', bg: '#FFFFFF' },
-                { l: 'トイレ', t: 'といれにいきたい', c: 'cat_action', i: '🚽', bg: '#FFFFFF' },
+                { l: 'パン', t: 'ぱん', c: 'cat_food', i: '🍞', bg: '#FFFFFF' },
+                { l: 'バナナ', t: 'ばなな', c: 'cat_food', i: '🍌', bg: '#FFFFFF' },
+                { l: 'りんご', t: 'りんご', c: 'cat_food', i: '🍎', bg: '#FFFFFF' },
+                { l: 'ゼリー', t: 'ぜりー', c: 'cat_food', i: '🍮', bg: '#FFFFFF' },
+                { l: 'アイスクリーム', t: 'あいすくりーむ', c: 'cat_food', i: '🍦', bg: '#FFFFFF' },
+                { l: 'お茶', t: 'おちゃ', c: 'cat_food', i: '🍵', bg: '#FFFFFF' },
+                { l: '水', t: 'みず', c: 'cat_food', i: '💧', bg: '#FFFFFF' },
+                { l: 'ジュース', t: 'じゅーす', c: 'cat_food', i: '🧃', bg: '#FFFFFF' },
+                { l: '牛乳', t: 'ぎゅうにゅう', c: 'cat_food', i: '🥛', bg: '#FFFFFF' },
+                
+                // 【遊び・おもちゃ】
+                { l: 'YouTube', t: 'ゆーちゅーぶ', c: 'cat_toy', i: '📺', bg: '#FFFFFF' },
+                { l: 'iPad', t: 'あいぱっど', c: 'cat_toy', i: '📱', bg: '#FFFFFF' },
+                { l: 'ブロック', t: 'ぶろっく', c: 'cat_toy', i: '🧱', bg: '#FFFFFF' },
+                { l: 'ぬいぐるみ', t: 'ぬいぐるみ', c: 'cat_toy', i: '🧸', bg: '#FFFFFF' },
+                { l: 'ミニカー', t: 'みにかー', c: 'cat_toy', i: '🚗', bg: '#FFFFFF' },
+                { l: 'ボール', t: 'ぼーる', c: 'cat_toy', i: '⚽', bg: '#FFFFFF' },
+                { l: '絵本', t: 'えほん', c: 'cat_toy', i: '📖', bg: '#FFFFFF' },
+                { l: 'お絵描き', t: 'おえかき', c: 'cat_toy', i: '🖍️', bg: '#FFFFFF' },
+                { l: '公園', t: 'こうえん', c: 'cat_toy', i: '🎪', bg: '#FFFFFF' },
+                { l: 'シャボン玉', t: 'しゃぼんだま', c: 'cat_toy', i: '🫧', bg: '#FFFFFF' },
+                { l: 'トランポリン', t: 'とらんぽりん', c: 'cat_toy', i: '🤸', bg: '#FFFFFF' },
+                
+                // 【生理・生活】
+                { l: 'トイレ', t: 'といれ', c: 'cat_life', i: '🚽', bg: '#FFFFFF' },
+                { l: 'お風呂', t: 'おふろ', c: 'cat_life', i: '🛁', bg: '#FFFFFF' },
+                { l: '歯磨き', t: 'はみがき', c: 'cat_life', i: '🪥', bg: '#FFFFFF' },
+                { l: '手洗い', t: 'てあらい', c: 'cat_life', i: '🧼', bg: '#FFFFFF' },
+                { l: '着替え', t: 'きがえ', c: 'cat_life', i: '👕', bg: '#FFFFFF' },
+                { l: '寝る', t: 'ねる', c: 'cat_life', i: '🛏️', bg: '#FFFFFF' },
+                { l: '靴を履く', t: 'くつをはく', c: 'cat_life', i: '👟', bg: '#FFFFFF' },
+                { l: '薬', t: 'くすり', c: 'cat_life', i: '💊', bg: '#FFFFFF' },
+                
+                // 【動作・場所】
+                { l: '行く', t: 'いく', c: 'cat_action', i: '🚶', bg: '#FFFFFF' },
+                { l: '帰る', t: 'かえる', c: 'cat_action', i: '🏠', bg: '#FFFFFF' },
+                { l: '見る', t: 'みる', c: 'cat_action', i: '👀', bg: '#FFFFFF' },
+                { l: '聴く', t: 'きく', c: 'cat_action', i: '🎵', bg: '#FFFFFF' },
+                { l: '座る', t: 'すわる', c: 'cat_action', i: '🪑', bg: '#FFFFFF' },
+                { l: '病院', t: 'びょういん', c: 'cat_action', i: '🏥', bg: '#FFFFFF' },
+                { l: '学校', t: 'がっこう', c: 'cat_action', i: '🏫', bg: '#FFFFFF' },
+                { l: 'お店', t: 'おみせ', c: 'cat_action', i: '🏪', bg: '#FFFFFF' },
+                
+                // 【人物・感情】
                 { l: 'お母さん', t: 'おかあさん', c: 'cat_person', i: '👩', bg: '#FFFFFF' },
-                { l: 'あか', t: 'あか', c: 'cat_color', i: '🔴', bg: '#FFFFFF' }
+                { l: 'お父さん', t: 'おとうさん', c: 'cat_person', i: '👨', bg: '#FFFFFF' },
+                { l: '先生', t: 'せんせい', c: 'cat_person', i: '👨‍🏫', bg: '#FFFFFF' },
+                { l: '痛い', t: 'いたい', c: 'cat_person', i: '🤕', bg: '#FFFFFF' }
             ];
             cards = samples.map((s, idx) => ({
                 id: 'init_' + idx,
@@ -317,6 +372,9 @@
                 if (c.category === 'cat_predicate') border = 'card-predicate';
                 else if (c.category === 'cat_person') border = 'card-person';
                 else if (c.category === 'cat_action') border = 'card-action';
+                else if (c.category === 'cat_food') border = 'card-default';
+                else if (c.category === 'cat_toy') border = 'card-default';
+                else if (c.category === 'cat_life') border = 'card-default';
 
                 return `
                 <div class="pecs-card bg-white rounded-xl overflow-hidden flex flex-col shadow-sm ${border}" style="height: 160px;" onclick="addToStrip('${c.id}')">
