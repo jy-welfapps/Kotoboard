@@ -3,385 +3,497 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PECS Communication Board</title>
+    <title>PECS Board Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* 基本設定 */
         body {
             font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
             overscroll-behavior-y: contain;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            background-color: #f3f4f6;
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+        /* カードデザイン */
         .pecs-card {
-            transition: transform 0.1s;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
             cursor: pointer;
             position: relative;
             touch-action: manipulation;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .pecs-card:active { transform: scale(0.95); }
+        .pecs-card:active { transform: scale(0.96); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        
+        /* ピン留めマーク */
+        .pin-badge {
+            position: absolute; top: 4px; left: 4px;
+            color: #F59E0B; font-size: 14px;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+            z-index: 10;
+        }
 
-        /* カテゴリごとの色 */
-        .card-predicate { border: 3px solid #F59E0B; background-color: #FFFBEB; }
-        .card-person { border: 2px solid #EC4899; }
-        .card-action { border: 2px solid #10B981; }
-        .card-default { border: 2px solid #3B82F6; }
+        /* カテゴリカラー（枠線と背景） */
+        .cat-require { border: 3px solid #F59E0B; background: #FFFBEB; } /* 要求（黄色） */
+        .cat-life { border: 2px solid #10B981; background: #ECFDF5; } /* 生活（緑） */
+        .cat-food { border: 2px solid #EF4444; background: #FEF2F2; } /* 食事（赤） */
+        .cat-play { border: 2px solid #3B82F6; background: #EFF6FF; } /* 遊び（青） */
+        .cat-feeling { border: 2px solid #8B5CF6; background: #F5F3FF; } /* 気持ち（紫） */
+        .cat-other { border: 2px solid #6B7280; background: #F9FAFB; } /* その他（グレー） */
 
-        /* 再生中のハイライト */
+        /* 再生中エフェクト */
         .playing-highlight {
-            border-color: #EF4444 !important; /* 赤枠 */
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-            transform: scale(1.05);
+            border-color: #EF4444 !important;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+            transform: scale(1.02);
+            z-index: 20;
         }
-
-        /* 再生中の操作無効化スタイル */
-        .disabled-during-speech {
-            opacity: 0.5;
-            pointer-events: none;
-            filter: grayscale(0.5);
-            cursor: not-allowed;
-        }
-
-        .speech-active-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.1);
-            z-index: 15;
-            pointer-events: auto;
-        }
-
-        /* 再生中ボタンのスタイル */
-        .btn-speaking {
-            background: #DC2626 !important;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-
-        .edit-trigger {
-            position: absolute; top: 4px; right: 4px;
-            background: rgba(255,255,255,0.9);
-            border-radius: 50%; width: 32px; height: 32px;
-            display: flex; items-center; justify-center;
-            z-index: 20; border: 1px solid #ccc;
-        }
-
+        
+        /* モーダルアニメーション */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s; }
+        
         /* トースト通知 */
-        @keyframes slideUpFade {
-            0% { opacity: 0; transform: translate(-50%, 20px); }
-            10% { opacity: 1; transform: translate(-50%, 0); }
-            90% { opacity: 1; transform: translate(-50%, 0); }
-            100% { opacity: 0; transform: translate(-50%, -20px); }
-        }
         .toast {
-            position: fixed; bottom: 120px; left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.85); color: white;
-            padding: 12px 24px; border-radius: 50px;
-            font-size: 16px; font-weight: bold;
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: rgba(31, 41, 55, 0.9); color: white;
+            padding: 10px 20px; rounded-full: 99px;
+            font-weight: bold; font-size: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease-out;
             z-index: 9999; pointer-events: none;
-            white-space: nowrap;
-            animation: slideUpFade 2.5s forwards;
+        }
+        @keyframes slideUp { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* グリッドサイズ調整（JSでクラス切り替え） */
+        .grid-size-large { grid-template-columns: repeat(3, 1fr); }
+        .grid-size-medium { grid-template-columns: repeat(4, 1fr); }
+        .grid-size-small { grid-template-columns: repeat(5, 1fr); }
+        @media (max-width: 640px) {
+            .grid-size-large { grid-template-columns: repeat(2, 1fr); }
+            .grid-size-medium { grid-template-columns: repeat(3, 1fr); }
+            .grid-size-small { grid-template-columns: repeat(4, 1fr); }
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800" style="margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;">
+<body class="h-screen flex flex-col overflow-hidden text-gray-800">
 
-    <header class="bg-white p-3 shadow-md z-10 flex-none">
-        <div class="flex items-center justify-between mb-2">
+    <header class="bg-white p-2 shadow-sm z-10 flex-none border-b border-gray-200">
+        <div class="flex items-center justify-between mb-2 px-1">
             <div class="flex items-center gap-2">
-                <h1 class="text-xl font-bold text-blue-600"><i class="fas fa-shapes mr-1"></i>PECSボード</h1>
-                <button onclick="resetData()" class="text-xs text-gray-400 border border-gray-300 rounded px-2 py-1 ml-2">初期化</button>
+                <button onclick="toggleSettings()" class="text-gray-500 hover:text-gray-700 p-1">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-lg font-bold text-gray-700">PECS Pro</h1>
+                <span id="modeBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">大人</span>
             </div>
             <div class="flex gap-2">
-                <button onclick="openCategoryManager()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-bold border border-gray-300">
-                    <i class="fas fa-tags"></i> カテゴリ
+                <button onclick="togglePinFilter()" id="pinFilterBtn" class="text-gray-400 hover:text-yellow-500 p-2 rounded-full border border-transparent hover:bg-yellow-50 transition-colors">
+                    <i class="fas fa-star text-lg"></i>
                 </button>
-                <button onclick="openCardModal()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-sm">
-                    <i class="fas fa-plus"></i> 作る
+                <button onclick="openCardModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm transition-transform active:scale-95 flex items-center gap-1">
+                    <i class="fas fa-plus"></i> <span class="hidden sm:inline">作る</span>
                 </button>
             </div>
         </div>
-        <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1" id="categoryBar"></div>
+        <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1 px-1" id="categoryBar"></div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-3 bg-gray-50" id="mainContainer" style="padding-bottom: 220px;">
-        <div id="cardGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3"></div>
-        <div id="emptyState" class="hidden flex-col items-center justify-center mt-10 text-gray-400">
-            <i class="fas fa-box-open text-6xl mb-4"></i>
-            <p>カードがありません。「作る」ボタンから追加してください。</p>
+    <div id="settingsMenu" class="fixed inset-0 bg-black/50 hidden z-50" onclick="if(event.target===this) toggleSettings()">
+        <div class="absolute left-0 top-0 bottom-0 w-80 bg-white shadow-xl transform transition-transform duration-300 -translate-x-full" id="settingsPanel">
+            <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+                <h2 class="font-bold text-lg"><i class="fas fa-cog mr-2"></i>設定・メニュー</h2>
+                <button onclick="toggleSettings()" class="text-gray-500"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4 space-y-6 overflow-y-auto h-full pb-20">
+                
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">表示モード</h3>
+                    <div class="flex bg-gray-200 rounded-lg p-1">
+                        <button onclick="setMode('child')" id="modeChildBtn" class="flex-1 py-1.5 rounded-md text-sm font-bold transition-colors">ひらがな（児童）</button>
+                        <button onclick="setMode('adult')" id="modeAdultBtn" class="flex-1 py-1.5 rounded-md text-sm font-bold bg-white shadow-sm transition-colors">漢字（大人）</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">カードの大きさ</h3>
+                    <div class="flex gap-2">
+                        <button onclick="setGridSize('large')" class="flex-1 py-2 border rounded hover:bg-gray-50 text-sm">大</button>
+                        <button onclick="setGridSize('medium')" class="flex-1 py-2 border rounded hover:bg-gray-50 text-sm">中</button>
+                        <button onclick="setGridSize('small')" class="flex-1 py-2 border rounded hover:bg-gray-50 text-sm">小</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">並び順</h3>
+                    <select id="sortOrder" onchange="changeSort(this.value)" class="w-full p-2 border rounded bg-white">
+                        <option value="default">標準（ピン留め優先）</option>
+                        <option value="aiueo">あいうえお順</option>
+                        <option value="category">カテゴリ順</option>
+                        <option value="frequency">よく使う順</option>
+                    </select>
+                </div>
+
+                <div class="border-t pt-4">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">データ管理</h3>
+                    <div class="space-y-2">
+                        <button onclick="exportData()" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm flex items-center gap-2">
+                            <i class="fas fa-file-export text-blue-500"></i> バックアップ（保存）
+                        </button>
+                        <label class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm flex items-center gap-2 cursor-pointer">
+                            <i class="fas fa-file-import text-green-500"></i> 復元（読み込み）
+                            <input type="file" id="importInput" class="hidden" accept=".json" onchange="importData(this)">
+                        </label>
+                        <button onclick="resetAllData()" class="w-full text-left px-3 py-2 hover:bg-red-50 rounded text-sm flex items-center gap-2 text-red-600">
+                            <i class="fas fa-trash-alt"></i> 全データを初期化
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-1 overflow-y-auto p-2 bg-gray-100" id="mainContainer">
+        <div id="cardGrid" class="grid gap-2 pb-32 transition-all duration-300"></div>
+        
+        <div id="emptyState" class="hidden flex-col items-center justify-center mt-20 text-gray-400">
+            <i class="fas fa-box-open text-5xl mb-3 opacity-50"></i>
+            <p class="text-sm font-bold">表示できるカードがありません</p>
+            <button onclick="openCardModal()" class="mt-4 text-blue-500 text-sm hover:underline">新しいカードを作る</button>
         </div>
     </main>
 
-    <footer class="bg-white border-t-4 border-blue-200 flex-shrink-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" style="position: fixed; bottom: 0; left: 0; right: 0;">
-        <div class="flex items-center p-2 gap-2 bg-yellow-50 overflow-x-auto hide-scrollbar min-h-[120px] relative" id="sentenceStrip">
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-gray-400 font-bold opacity-50" id="stripPlaceholder">
-                <i class="fas fa-hand-pointer mr-2"></i> ここにカードをならべてね
+    <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center px-2 py-3 gap-2 bg-gray-50 overflow-x-auto hide-scrollbar min-h-[100px] relative border-b border-gray-100" id="sentenceStrip">
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-gray-300 font-bold text-sm" id="stripPlaceholder">
+                <i class="far fa-hand-point-up mr-2"></i>カードを選んでください
             </div>
         </div>
 
-        <div class="grid grid-cols-5 gap-2 p-2 bg-gray-100" id="footerButtons">
-            <button onclick="popLastCard()" id="btnPop" class="col-span-1 bg-white border border-gray-300 text-gray-600 rounded-lg py-2 flex flex-col items-center active:bg-gray-200">
-                <i class="fas fa-backspace text-lg"></i>
+        <div class="grid grid-cols-5 gap-1 p-2 bg-white">
+            <button onclick="popLastCard()" class="col-span-1 py-3 rounded-lg border border-gray-200 text-gray-500 active:bg-gray-100 flex flex-col items-center justify-center">
+                <i class="fas fa-backspace mb-0.5"></i>
                 <span class="text-[10px] font-bold">1つ消す</span>
             </button>
-            <button onclick="clearAllStrip()" id="btnClear" class="col-span-1 bg-red-100 border border-red-200 text-red-500 rounded-lg py-2 flex flex-col items-center active:bg-red-200">
-                <i class="fas fa-trash-alt text-lg"></i>
+            <button onclick="clearStrip()" class="col-span-1 py-3 rounded-lg border border-red-100 text-red-400 active:bg-red-50 flex flex-col items-center justify-center">
+                <i class="fas fa-trash-alt mb-0.5"></i>
                 <span class="text-[10px] font-bold">ぜんぶ</span>
             </button>
-            <button onclick="playSentence()" id="btnSpeak" class="col-span-3 bg-blue-600 text-white rounded-lg py-2 shadow-md flex items-center justify-center gap-2 active:bg-blue-700 active:scale-95 transition-transform">
-                <i class="fas fa-volume-up text-2xl" id="speakIcon"></i>
-                <span class="text-xl font-bold" id="speakText">おはなしする</span>
+            <button onclick="playSentence()" id="playBtn" class="col-span-3 py-3 rounded-lg bg-blue-600 text-white shadow-md active:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-volume-up text-xl"></i>
+                <span class="text-lg font-bold">つたえる</span>
             </button>
         </div>
     </footer>
 
-    <!-- 再生中のオーバーレイ -->
-    <div id="speechOverlay" class="speech-active-overlay hidden"></div>
+    <div id="cardModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl w-full max-w-sm flex flex-col max-h-[90vh] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="bg-gray-800 text-white p-3 font-bold flex justify-between items-center">
+                <span id="modalTitle">カード編集</span>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 space-y-4">
+                <div class="relative w-full aspect-square bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer overflow-hidden group">
+                    <input type="file" id="imgInput" accept="image/*" class="absolute inset-0 opacity-0 z-10 w-full h-full cursor-pointer" onchange="handleImage(this)">
+                    <div id="previewArea" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-gray-400">
+                        <i class="fas fa-camera text-3xl mb-1"></i>
+                        <span class="text-xs font-bold">写真を変更</span>
+                    </div>
+                    <img id="previewImg" class="absolute inset-0 w-full h-full object-contain bg-white hidden">
+                </div>
 
-    <div id="cardModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="bg-blue-600 p-4 text-white font-bold flex justify-between items-center flex-none">
-                <span id="cardModalTitle">カードの設定</span>
-                <button onclick="closeModal('cardModal')" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="p-4 space-y-4 overflow-y-auto flex-1">
-                <div>
-                    <label class="block text-sm font-bold text-gray-600 mb-1">カードの画像 <span class="text-red-500">*</span></label>
-                    <div class="relative w-full h-48 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 cursor-pointer overflow-hidden">
-                        <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 z-10" onchange="handleImageSelect(this)">
-                        <div id="previewBox" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <i class="fas fa-camera text-4xl text-blue-300 mb-2"></i>
-                            <span class="text-sm text-blue-400 font-bold">ここをタップして写真を選択</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 gap-4">
+                <div class="space-y-3">
                     <div>
-                        <label class="block text-sm font-bold text-gray-600 mb-1">カードの名前（表示用） <span class="text-red-500">*</span></label>
-                        <input type="text" id="inputLabel" class="w-full border-2 border-gray-300 p-3 rounded-lg text-lg bg-gray-50" placeholder="例: りんご">
+                        <label class="text-xs font-bold text-gray-500">名前（漢字モード用）<span class="text-red-500">*</span></label>
+                        <input type="text" id="inputLabel" class="w-full p-2 border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-200 outline-none" placeholder="例: おやつ">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-600 mb-1">読み上げ（ひらがな推奨）</label>
-                        <input type="text" id="inputTalk" class="w-full border-2 border-blue-300 p-3 rounded-lg text-lg bg-blue-50 font-bold text-blue-800" placeholder="例: りんご">
-                        <p class="text-xs text-gray-400 mt-1">※ここに入力した文字だけを読み上げます</p>
+                        <label class="text-xs font-bold text-gray-500">読みがな（児童モード・音声用）</label>
+                        <input type="text" id="inputTalk" class="w-full p-2 border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-200 outline-none" placeholder="例: おやつ">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-600 mb-1">カテゴリー</label>
-                        <select id="inputCategory" class="w-full border-2 border-gray-300 p-3 rounded-lg text-lg bg-white"></select>
+                        <label class="text-xs font-bold text-gray-500">カテゴリー</label>
+                        <select id="inputCat" class="w-full p-2 border rounded bg-white"></select>
+                    </div>
+                    <div class="flex items-center gap-2 pt-1">
+                        <input type="checkbox" id="inputPin" class="w-4 h-4 text-blue-600 rounded">
+                        <label for="inputPin" class="text-sm font-bold text-gray-700">お気に入り（ピン留め）</label>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t bg-gray-50 flex gap-3 flex-none">
-                <button id="delCardBtn" onclick="deleteCard()" class="hidden px-4 py-3 bg-red-100 text-red-600 font-bold rounded-lg border border-red-200"><i class="fas fa-trash"></i></button>
-                <button onclick="saveCard()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg text-lg">保存する</button>
+            <div class="p-3 bg-gray-50 border-t flex gap-2">
+                <button id="delBtn" onclick="deleteCard()" class="px-3 py-2 text-red-500 bg-white border border-gray-200 rounded hover:bg-red-50 hidden"><i class="fas fa-trash-alt"></i></button>
+                <button onclick="saveCard()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-sm">保存</button>
             </div>
         </div>
     </div>
 
-    <div id="categoryModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-md h-[70vh] flex flex-col shadow-2xl overflow-hidden">
-            <div class="bg-gray-800 p-4 text-white font-bold flex justify-between items-center">
-                <span><i class="fas fa-tags mr-2"></i>カテゴリー編集</span>
-                <button onclick="closeModal('categoryModal')"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-2" id="categoryList"></div>
-            <div class="p-3 border-t bg-gray-50 flex gap-2">
-                <input type="text" id="newCatInput" class="flex-1 border-2 border-gray-300 p-2 rounded-lg" placeholder="新しいカテゴリ名">
-                <button onclick="addCategory()" class="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">追加</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toastContainer"></div>
+    <div id="toastArea"></div>
 
     <script>
-        // バージョン管理
-        const DB_KEY = 'pecs_app_v4_stable';
+        // --- 設定・定数 ---
+        const DB_KEY = 'pecs_pro_v5';
+        const CONFIG_KEY = 'pecs_config_v1';
+        
+        // デフォルト設定
+        let config = {
+            mode: 'adult', // child | adult
+            gridSize: 'medium', // small | medium | large
+            sort: 'default' // default | aiueo | category | frequency
+        };
 
+        // データ構造
         let cards = [];
         let categories = [];
         let sentenceStrip = [];
         let currentFilter = 'all';
-        let editingCardId = null;
-        let tempImageBase64 = null;
+        let isPinFilter = false;
+        
+        // 編集用一時変数
+        let editingId = null;
+        let tempImg = null;
 
-        // 初期化
+        // 音声エンジン用
+        let isSpeaking = false;
+
+        // --- 初期化 ---
         window.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
             loadData();
-            refreshAllUI();
-            
-            // 音声エンジンの事前ロード（iOS対策）
-            if(window.speechSynthesis) {
-                window.speechSynthesis.getVoices();
-                // voiceschangedイベントで音声リストを取得
-                window.speechSynthesis.onvoiceschanged = () => {
-                    window.speechSynthesis.getVoices();
-                };
-            }
+            applyConfig();
+            initSpeech();
+            refreshUI();
         });
 
-        // データ読み込み
+        // --- データ管理 ---
+        function loadConfig() {
+            const saved = localStorage.getItem(CONFIG_KEY);
+            if(saved) config = {...config, ...JSON.parse(saved)};
+        }
+
+        function saveConfig() {
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+            applyConfig();
+        }
+
         function loadData() {
             const raw = localStorage.getItem(DB_KEY);
-            if (raw) {
+            if(raw) {
                 const data = JSON.parse(raw);
                 cards = data.cards || [];
                 categories = data.categories || [];
+                // バージョン移行などの処理があればここに記述
             } else {
                 initDefaults();
             }
-            if (categories.length === 0) initDefaults();
+            // 万が一カテゴリがない場合の復旧
+            if(categories.length === 0) initDefaults();
         }
 
+        function saveData() {
+            try {
+                localStorage.setItem(DB_KEY, JSON.stringify({cards, categories}));
+            } catch(e) {
+                showToast('⚠️ 容量がいっぱいで保存できません');
+            }
+        }
+
+        // --- デフォルトデータ生成（Geminiによる最適化） ---
         function initDefaults() {
+            // 実践的なカテゴリ分け
             categories = [
-                {id: 'cat_predicate', label: 'おねがい・いしひょうじ'},
-                {id: 'cat_food', label: 'たべもの・のみもの'},
-                {id: 'cat_toy', label: 'あそび・おもちゃ'},
-                {id: 'cat_life', label: 'せいかつ'},
-                {id: 'cat_action', label: 'どうさ・ばしょ'},
-                {id: 'cat_person', label: 'ひと・きもち'}
+                {id: 'require', label: 'おねがい', color: 'cat-require'},
+                {id: 'life', label: 'せいかつ', color: 'cat-life'},
+                {id: 'food', label: 'たべもの', color: 'cat-food'},
+                {id: 'play', label: 'あそび', color: 'cat-play'},
+                {id: 'feeling', label: 'きもち', color: 'cat-feeling'},
+                {id: 'other', label: 'そのほか', color: 'cat-other'}
             ];
-            // 初期データ：包括的なPECSカードセット
-            const samples = [
-                // 【要求・拒否】基本的な意思表示
-                { l: '〜をください', t: 'をください', c: 'cat_predicate', i: '🤲', bg: '#FFFBEB' },
-                { l: 'おしまい', t: 'おしまい', c: 'cat_predicate', i: '🚫', bg: '#FFFBEB' },
-                { l: 'まだ', t: 'まだ', c: 'cat_predicate', i: '➕', bg: '#FFFBEB' },
-                { l: '手伝ってください', t: 'てつだってください', c: 'cat_predicate', i: '🙋', bg: '#FFFBEB' },
-                { l: '貸して', t: 'かして', c: 'cat_predicate', i: '🤝', bg: '#FFFBEB' },
-                { l: '休憩する', t: 'きゅうけいする', c: 'cat_predicate', i: '😌', bg: '#FFFBEB' },
-                { l: 'はい', t: 'はい', c: 'cat_predicate', i: '⭕', bg: '#FFFBEB' },
-                { l: 'いいえ', t: 'いいえ', c: 'cat_predicate', i: '❌', bg: '#FFFBEB' },
+
+            // 厳選カードセット（1枚で完結するタイプを優先）
+            const defaults = [
+                // 要求（最重要）
+                {l:'〜ください', t:'ください', c:'require', i:'🤲', bg:'#FFFBEB', pin:true},
+                {l:'手伝って', t:'てつだって', c:'require', i:'🤝', bg:'#FFFBEB', pin:true},
+                {l:'おしまい', t:'おしまい', c:'require', i:'🙅', bg:'#FFFBEB'},
+                {l:'あとで', t:'あとで', c:'require', i:'⏳', bg:'#FFFBEB'},
                 
-                // 【食べ物・飲み物】
-                { l: 'おやつ', t: 'おやつ', c: 'cat_food', i: '🍪', bg: '#FFFFFF' },
-                { l: 'ごはん', t: 'ごはん', c: 'cat_food', i: '🍚', bg: '#FFFFFF' },
-                { l: 'パン', t: 'ぱん', c: 'cat_food', i: '🍞', bg: '#FFFFFF' },
-                { l: 'バナナ', t: 'ばなな', c: 'cat_food', i: '🍌', bg: '#FFFFFF' },
-                { l: 'りんご', t: 'りんご', c: 'cat_food', i: '🍎', bg: '#FFFFFF' },
-                { l: 'ゼリー', t: 'ぜりー', c: 'cat_food', i: '🍮', bg: '#FFFFFF' },
-                { l: 'アイスクリーム', t: 'あいすくりーむ', c: 'cat_food', i: '🍦', bg: '#FFFFFF' },
-                { l: 'お茶', t: 'おちゃ', c: 'cat_food', i: '🍵', bg: '#FFFFFF' },
-                { l: '水', t: 'みず', c: 'cat_food', i: '💧', bg: '#FFFFFF' },
-                { l: 'ジュース', t: 'じゅーす', c: 'cat_food', i: '🧃', bg: '#FFFFFF' },
-                { l: '牛乳', t: 'ぎゅうにゅう', c: 'cat_food', i: '🥛', bg: '#FFFFFF' },
+                // 生活（1枚完結）
+                {l:'トイレ', t:'といれにいきます', c:'life', i:'🚽', bg:'#ECFDF5', pin:true},
+                {l:'お風呂', t:'おふろにはいります', c:'life', i:'🛁', bg:'#ECFDF5'},
+                {l:'手洗い', t:'てをあらいます', c:'life', i:'🧼', bg:'#ECFDF5'},
+                {l:'着替え', t:'きがえます', c:'life', i:'👕', bg:'#ECFDF5'},
+                {l:'寝る', t:'ねます', c:'life', i:'💤', bg:'#ECFDF5'},
                 
-                // 【遊び・おもちゃ】
-                { l: 'YouTube', t: 'ゆーちゅーぶ', c: 'cat_toy', i: '📺', bg: '#FFFFFF' },
-                { l: 'iPad', t: 'あいぱっど', c: 'cat_toy', i: '📱', bg: '#FFFFFF' },
-                { l: 'ブロック', t: 'ぶろっく', c: 'cat_toy', i: '🧱', bg: '#FFFFFF' },
-                { l: 'ぬいぐるみ', t: 'ぬいぐるみ', c: 'cat_toy', i: '🧸', bg: '#FFFFFF' },
-                { l: 'ミニカー', t: 'みにかー', c: 'cat_toy', i: '🚗', bg: '#FFFFFF' },
-                { l: 'ボール', t: 'ぼーる', c: 'cat_toy', i: '⚽', bg: '#FFFFFF' },
-                { l: '絵本', t: 'えほん', c: 'cat_toy', i: '📖', bg: '#FFFFFF' },
-                { l: 'お絵描き', t: 'おえかき', c: 'cat_toy', i: '🖍️', bg: '#FFFFFF' },
-                { l: '公園', t: 'こうえん', c: 'cat_toy', i: '🎪', bg: '#FFFFFF' },
-                { l: 'シャボン玉', t: 'しゃぼんだま', c: 'cat_toy', i: '🫧', bg: '#FFFFFF' },
-                { l: 'トランポリン', t: 'とらんぽりん', c: 'cat_toy', i: '🤸', bg: '#FFFFFF' },
+                // 食事
+                {l:'おやつ', t:'おやつ', c:'food', i:'🍪', bg:'#FEF2F2'},
+                {l:'ごはん', t:'ごはん', c:'food', i:'🍚', bg:'#FEF2F2'},
+                {l:'水', t:'みず', c:'food', i:'💧', bg:'#FEF2F2'},
+                {l:'ジュース', t:'じゅーす', c:'food', i:'🧃', bg:'#FEF2F2'},
                 
-                // 【生理・生活】
-                { l: 'トイレ', t: 'といれ', c: 'cat_life', i: '🚽', bg: '#FFFFFF' },
-                { l: 'お風呂', t: 'おふろ', c: 'cat_life', i: '🛁', bg: '#FFFFFF' },
-                { l: '歯磨き', t: 'はみがき', c: 'cat_life', i: '🪥', bg: '#FFFFFF' },
-                { l: '手洗い', t: 'てあらい', c: 'cat_life', i: '🧼', bg: '#FFFFFF' },
-                { l: '着替え', t: 'きがえ', c: 'cat_life', i: '👕', bg: '#FFFFFF' },
-                { l: '寝る', t: 'ねる', c: 'cat_life', i: '🛏️', bg: '#FFFFFF' },
-                { l: '靴を履く', t: 'くつをはく', c: 'cat_life', i: '👟', bg: '#FFFFFF' },
-                { l: '薬', t: 'くすり', c: 'cat_life', i: '💊', bg: '#FFFFFF' },
+                // 遊び
+                {l:'YouTube', t:'ゆーちゅーぶ', c:'play', i:'▶️', bg:'#EFF6FF'},
+                {l:'iPad', t:'あいぱっど', c:'play', i:'📱', bg:'#EFF6FF'},
+                {l:'おもちゃ', t:'おもちゃ', c:'play', i:'🧸', bg:'#EFF6FF'},
+                {l:'公園', t:'こうえん', c:'play', i:'🛝', bg:'#EFF6FF'},
                 
-                // 【動作・場所】
-                { l: '行く', t: 'いく', c: 'cat_action', i: '🚶', bg: '#FFFFFF' },
-                { l: '帰る', t: 'かえる', c: 'cat_action', i: '🏠', bg: '#FFFFFF' },
-                { l: '見る', t: 'みる', c: 'cat_action', i: '👀', bg: '#FFFFFF' },
-                { l: '聴く', t: 'きく', c: 'cat_action', i: '🎵', bg: '#FFFFFF' },
-                { l: '座る', t: 'すわる', c: 'cat_action', i: '🪑', bg: '#FFFFFF' },
-                { l: '病院', t: 'びょういん', c: 'cat_action', i: '🏥', bg: '#FFFFFF' },
-                { l: '学校', t: 'がっこう', c: 'cat_action', i: '🏫', bg: '#FFFFFF' },
-                { l: 'お店', t: 'おみせ', c: 'cat_action', i: '🏪', bg: '#FFFFFF' },
-                
-                // 【人物・感情】
-                { l: 'お母さん', t: 'おかあさん', c: 'cat_person', i: '👩', bg: '#FFFFFF' },
-                { l: 'お父さん', t: 'おとうさん', c: 'cat_person', i: '👨', bg: '#FFFFFF' },
-                { l: '先生', t: 'せんせい', c: 'cat_person', i: '👨‍🏫', bg: '#FFFFFF' },
-                { l: '痛い', t: 'いたい', c: 'cat_person', i: '🤕', bg: '#FFFFFF' }
+                // 気持ち・人
+                {l:'痛い', t:'いたいです', c:'feeling', i:'🤕', bg:'#F5F3FF', pin:true},
+                {l:'イヤ', t:'いやです', c:'feeling', i:'😠', bg:'#F5F3FF'},
+                {l:'楽しい', t:'たのしい', c:'feeling', i:'😄', bg:'#F5F3FF'},
+                {l:'お母さん', t:'おかあさん', c:'feeling', i:'👩', bg:'#F5F3FF'},
+                {l:'先生', t:'せんせい', c:'feeling', i:'🧑‍🏫', bg:'#F5F3FF'}
             ];
-            cards = samples.map((s, idx) => ({
-                id: 'init_' + idx,
-                label: s.l,
-                talk: s.t,
-                category: s.c,
-                image: createIconImage(s.i, s.bg),
+
+            cards = defaults.map((d, i) => ({
+                id: 'def_' + i,
+                label: d.l,
+                talk: d.t,
+                category: d.c,
+                image: createIcon(d.i, d.bg),
+                isDefault: true,
+                pin: d.pin || false,
+                useCount: 0,
                 timestamp: Date.now()
             }));
             saveData();
         }
 
-        function createIconImage(icon, bgColor) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 300; canvas.height = 300;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = bgColor; ctx.fillRect(0,0,300,300);
-            ctx.font = '150px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        // アイコン画像生成（Canvasでリッチに）
+        function createIcon(icon, bg) {
+            const cvs = document.createElement('canvas');
+            cvs.width = 300; cvs.height = 300;
+            const ctx = cvs.getContext('2d');
+            
+            // 背景
+            ctx.fillStyle = bg;
+            ctx.fillRect(0,0,300,300);
+            
+            // アイコン
+            ctx.font = '160px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // 影をつけて視認性アップ
+            ctx.shadowColor = "rgba(0,0,0,0.1)";
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
             ctx.fillText(icon, 150, 150);
-            return canvas.toDataURL('image/jpeg', 0.8);
+            
+            return cvs.toDataURL('image/jpeg', 0.8);
         }
 
-        // --- UI描画 ---
-        function refreshAllUI() {
-            renderCategoryBar();
-            renderCardGrid();
+        // --- UIロジック ---
+        function applyConfig() {
+            // モード切替
+            const body = document.body;
+            const modeBadge = document.getElementById('modeBadge');
+            const btnChild = document.getElementById('modeChildBtn');
+            const btnAdult = document.getElementById('modeAdultBtn');
+
+            if(config.mode === 'child') {
+                modeBadge.textContent = 'ひらがな';
+                modeBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 font-bold";
+                btnChild.className = "flex-1 py-1.5 rounded-md text-sm font-bold bg-white shadow-sm text-green-600 transition-colors";
+                btnAdult.className = "flex-1 py-1.5 rounded-md text-sm font-bold text-gray-500 transition-colors";
+            } else {
+                modeBadge.textContent = '大人';
+                modeBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold";
+                btnChild.className = "flex-1 py-1.5 rounded-md text-sm font-bold text-gray-500 transition-colors";
+                btnAdult.className = "flex-1 py-1.5 rounded-md text-sm font-bold bg-white shadow-sm text-blue-600 transition-colors";
+            }
+
+            // グリッドサイズ
+            const grid = document.getElementById('cardGrid');
+            grid.className = `grid gap-2 pb-32 transition-all duration-300 grid-size-${config.gridSize}`;
+            
+            // ソート選択状態
+            document.getElementById('sortOrder').value = config.sort;
+        }
+
+        function refreshUI() {
+            renderCategories();
+            renderCards();
             renderStrip();
         }
 
-        function renderCategoryBar() {
+        function renderCategories() {
             const bar = document.getElementById('categoryBar');
-            const all = [{id: 'all', label: 'ぜんぶ'}, ...categories];
-            bar.innerHTML = all.map(cat => `
-                <button onclick="setFilter('${cat.id}')" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap border-2 transition-all ${currentFilter === cat.id ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-105' : 'bg-white text-gray-600 border-gray-200'}">
-                    ${cat.label}
-                </button>
-            `).join('');
+            const list = [{id:'all', label:'ぜんぶ'}, ...categories];
+            
+            bar.innerHTML = list.map(c => {
+                const active = currentFilter === c.id;
+                const baseClass = "px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-all";
+                const activeClass = "bg-gray-800 text-white border-gray-800 shadow-md";
+                const inactiveClass = "bg-white text-gray-600 border-gray-200 hover:bg-gray-50";
+                
+                return `<button onclick="setFilter('${c.id}')" class="${baseClass} ${active ? activeClass : inactiveClass}">${c.label}</button>`;
+            }).join('');
         }
 
-        function setFilter(id) { currentFilter = id; refreshAllUI(); }
-
-        function renderCardGrid() {
+        function renderCards() {
             const grid = document.getElementById('cardGrid');
             const empty = document.getElementById('emptyState');
-            const filtered = cards.filter(c => currentFilter === 'all' || c.category === currentFilter);
+            
+            // フィルタリング
+            let list = cards.filter(c => {
+                if(isPinFilter && !c.pin) return false;
+                if(currentFilter !== 'all' && c.category !== currentFilter) return false;
+                return true;
+            });
 
-            if (filtered.length === 0) {
-                grid.innerHTML = ''; empty.classList.remove('hidden'); empty.classList.add('flex');
+            // ソートロジック
+            list.sort((a, b) => {
+                // 1. ピン留め優先（設定で変更可能だがデフォルトはこれ）
+                if(config.sort === 'default') {
+                    if(a.pin && !b.pin) return -1;
+                    if(!a.pin && b.pin) return 1;
+                    return b.timestamp - a.timestamp; // 新しい順
+                }
+                // 2. 五十音
+                if(config.sort === 'aiueo') {
+                    return a.talk.localeCompare(b.talk, 'ja');
+                }
+                // 3. カテゴリ
+                if(config.sort === 'category') {
+                    if(a.category !== b.category) return a.category.localeCompare(b.category);
+                    return 0;
+                }
+                // 4. 頻度
+                if(config.sort === 'frequency') {
+                    return (b.useCount||0) - (a.useCount||0);
+                }
+                return 0;
+            });
+
+            if(list.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden'); empty.classList.add('flex');
                 return;
             }
             empty.classList.add('hidden'); empty.classList.remove('flex');
 
-            grid.innerHTML = filtered.map(c => {
-                let border = 'card-default';
-                if (c.category === 'cat_predicate') border = 'card-predicate';
-                else if (c.category === 'cat_person') border = 'card-person';
-                else if (c.category === 'cat_action') border = 'card-action';
-                else if (c.category === 'cat_food') border = 'card-default';
-                else if (c.category === 'cat_toy') border = 'card-default';
-                else if (c.category === 'cat_life') border = 'card-default';
+            grid.innerHTML = list.map(c => {
+                // カテゴリ色取得
+                const catObj = categories.find(cat => cat.id === c.category) || {color:'cat-other'};
+                // 表示名（モード分岐）
+                const dispName = (config.mode === 'child') ? c.talk : c.label;
 
                 return `
-                <div class="pecs-card bg-white rounded-xl overflow-hidden flex flex-col shadow-sm ${border}" style="height: 160px;" onclick="addToStrip('${c.id}')">
-                    <div class="edit-trigger" onclick="event.stopPropagation(); openEditModal('${c.id}')"><i class="fas fa-ellipsis-h text-gray-500"></i></div>
-                    <div class="h-28 w-full bg-white overflow-hidden flex items-center justify-center p-1"><img src="${c.image}" class="max-w-full max-h-full object-contain"></div>
-                    <div class="flex-1 flex items-center justify-center bg-white p-1">
-                        <span class="text-sm font-bold text-center leading-tight line-clamp-2">${c.label}</span>
+                <div class="pecs-card bg-white rounded-xl overflow-hidden flex flex-col ${catObj.color} aspect-[3/4]" onclick="addToStrip('${c.id}')">
+                    ${c.pin ? '<i class="fas fa-star pin-badge"></i>' : ''}
+                    <div class="absolute top-1 right-1 z-10">
+                        <button onclick="event.stopPropagation(); openEditModal('${c.id}')" class="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-500 shadow-sm border border-gray-100">
+                            <i class="fas fa-ellipsis-h text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 bg-white p-1 flex items-center justify-center overflow-hidden">
+                        <img src="${c.image}" class="w-full h-full object-contain pointer-events-none">
+                    </div>
+                    <div class="h-8 flex items-center justify-center bg-white/90 border-t border-gray-100 px-1">
+                        <span class="text-xs font-bold text-center truncate w-full">${dispName}</span>
                     </div>
                 </div>`;
             }).join('');
@@ -389,472 +501,357 @@
 
         function renderStrip() {
             const strip = document.getElementById('sentenceStrip');
-            const placeholder = document.getElementById('stripPlaceholder');
+            const ph = document.getElementById('stripPlaceholder');
             
-            // 一旦カード要素のみ全削除
-            Array.from(strip.children).forEach(child => {
-                if(child.id !== 'stripPlaceholder') strip.removeChild(child);
-            });
+            // カード要素クリア
+            const items = strip.querySelectorAll('.strip-item');
+            items.forEach(e => e.remove());
 
-            if (sentenceStrip.length === 0) {
-                placeholder.style.display = 'flex';
+            if(sentenceStrip.length === 0) {
+                ph.style.display = 'flex';
                 return;
             }
-            placeholder.style.display = 'none';
+            ph.style.display = 'none';
 
-            sentenceStrip.forEach((card, i) => {
-                const el = document.createElement('div');
-                el.className = "strip-card flex-shrink-0 w-24 bg-white border-2 border-gray-400 rounded-lg shadow-sm overflow-hidden animate-[fadeIn_0.3s] ml-2 first:ml-0 cursor-pointer";
-                el.id = `strip-card-${i}`;
-                el.onclick = () => removeFromStrip(i);
-                el.innerHTML = `
-                    <div class="w-full h-16 bg-white flex items-center justify-center p-1">
-                        <img src="${card.image}" class="max-w-full max-h-full object-contain">
+            sentenceStrip.forEach((c, idx) => {
+                const div = document.createElement('div');
+                div.className = "strip-item flex-shrink-0 w-20 bg-white rounded-lg border border-gray-300 shadow-sm overflow-hidden flex flex-col cursor-pointer animate-in fade-in zoom-in duration-200";
+                div.id = `strip-${idx}`;
+                div.onclick = () => removeStripItem(idx);
+                
+                const dispName = (config.mode === 'child') ? c.talk : c.label;
+                
+                div.innerHTML = `
+                    <div class="flex-1 p-1 flex items-center justify-center">
+                        <img src="${c.image}" class="max-w-full max-h-full object-contain">
                     </div>
-                    <div class="text-[10px] font-bold text-center p-1 truncate bg-gray-50">${card.label}</div>
+                    <div class="h-6 bg-gray-50 flex items-center justify-center text-[10px] font-bold truncate px-1">
+                        ${dispName}
+                    </div>
                 `;
-                strip.appendChild(el);
+                strip.appendChild(div);
             });
-            setTimeout(() => strip.scrollLeft = strip.scrollWidth, 50);
+            
+            // スクロール
+            setTimeout(() => strip.scrollTo({left: strip.scrollWidth, behavior:'smooth'}), 50);
         }
 
-        // --- 操作ロジック ---
+        // --- アクション ---
+        function setFilter(id) {
+            currentFilter = id;
+            isPinFilter = false;
+            document.getElementById('pinFilterBtn').classList.remove('text-yellow-500', 'bg-yellow-50');
+            refreshUI();
+        }
+
+        function togglePinFilter() {
+            isPinFilter = !isPinFilter;
+            const btn = document.getElementById('pinFilterBtn');
+            if(isPinFilter) btn.classList.add('text-yellow-500', 'bg-yellow-50');
+            else btn.classList.remove('text-yellow-500', 'bg-yellow-50');
+            refreshUI();
+        }
+
         function addToStrip(id) {
             const c = cards.find(x => x.id === id);
-            if (c) { sentenceStrip.push({...c}); renderStrip(); }
+            if(c) {
+                // 使用カウント加算
+                c.useCount = (c.useCount || 0) + 1;
+                saveData(); // カウント保存
+                
+                sentenceStrip.push({...c});
+                renderStrip();
+                // 振動フィードバック
+                if(navigator.vibrate) navigator.vibrate(5);
+            }
         }
-        function removeFromStrip(i) { sentenceStrip.splice(i, 1); renderStrip(); }
-        function popLastCard() { sentenceStrip.pop(); renderStrip(); }
-        function clearAllStrip() { if(sentenceStrip.length > 0 && confirm('作った文を全部消しますか？')) { sentenceStrip = []; renderStrip(); } }
 
-        // --- ★音声再生：完全互換性＋UI制御版★ ---
-        
-        // グローバル変数：音声再生状態管理
-        let isSpeaking = false;
-        let speechQueue = [];
-        let currentSpeechIndex = 0;
-        let currentUtterance = null;
+        function removeStripItem(idx) {
+            sentenceStrip.splice(idx, 1);
+            renderStrip();
+        }
+        function popLastCard() {
+            sentenceStrip.pop();
+            renderStrip();
+        }
+        function clearStrip() {
+            if(sentenceStrip.length > 0 && confirm('ぜんぶ消しますか？')) {
+                sentenceStrip = [];
+                renderStrip();
+            }
+        }
 
-        // UI状態の更新
-        function updateUIState(speaking) {
-            const cardGrid = document.getElementById('cardGrid');
-            const mainContainer = document.getElementById('mainContainer');
-            const categoryBar = document.getElementById('categoryBar');
-            const btnPop = document.getElementById('btnPop');
-            const btnClear = document.getElementById('btnClear');
-            const btnSpeak = document.getElementById('btnSpeak');
-            const speakIcon = document.getElementById('speakIcon');
-            const speakText = document.getElementById('speakText');
-            const overlay = document.getElementById('speechOverlay');
-
-            if (speaking) {
-                // 再生中の状態
-                cardGrid.classList.add('disabled-during-speech');
-                mainContainer.style.pointerEvents = 'none';
-                categoryBar.classList.add('disabled-during-speech');
-                btnPop.classList.add('disabled-during-speech');
-                btnClear.classList.add('disabled-during-speech');
-                btnSpeak.classList.add('btn-speaking');
-                speakIcon.className = 'fas fa-stop-circle text-2xl';
-                speakText.textContent = 'とめる';
-                overlay.classList.remove('hidden');
+        // --- 設定メニュー関連 ---
+        function toggleSettings() {
+            const menu = document.getElementById('settingsMenu');
+            const panel = document.getElementById('settingsPanel');
+            if(menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                setTimeout(() => panel.classList.remove('-translate-x-full'), 10);
             } else {
-                // 停止中の状態
-                cardGrid.classList.remove('disabled-during-speech');
-                mainContainer.style.pointerEvents = 'auto';
-                categoryBar.classList.remove('disabled-during-speech');
-                btnPop.classList.remove('disabled-during-speech');
-                btnClear.classList.remove('disabled-during-speech');
-                btnSpeak.classList.remove('btn-speaking');
-                speakIcon.className = 'fas fa-volume-up text-2xl';
-                speakText.textContent = 'おはなしする';
-                overlay.classList.add('hidden');
+                panel.classList.add('-translate-x-full');
+                setTimeout(() => menu.classList.add('hidden'), 300);
             }
         }
 
-        // 環境検出
-        function detectEnvironment() {
-            const ua = navigator.userAgent;
-            return {
-                isIOS: /iPad|iPhone|iPod/.test(ua) && !window.MSStream,
-                isSafari: /^((?!chrome|android).)*safari/i.test(ua),
-                isAndroid: /Android/.test(ua),
-                isChrome: /Chrome/.test(ua) && !/Edge/.test(ua)
-            };
+        function setMode(m) {
+            config.mode = m;
+            saveConfig();
+        }
+        function setGridSize(s) {
+            config.gridSize = s;
+            saveConfig();
+        }
+        function changeSort(val) {
+            config.sort = val;
+            saveConfig();
+            refreshUI(); // 即時反映
         }
 
-        // 音声エンジンの完全初期化
-        function initSpeechEngine() {
-            return new Promise((resolve) => {
-                // 既に音声がロード済みならすぐ解決
-                if (window.speechSynthesis.getVoices().length > 0) {
-                    resolve(true);
-                    return;
+        // --- インポート/エクスポート ---
+        function exportData() {
+            const data = {cards, categories, config, version: 'pro_v5'};
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pecs_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            showToast('バックアップファイルを保存しました');
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(confirm('現在のデータを上書きして復元しますか？')) {
+                        cards = data.cards || [];
+                        // カテゴリはID互換性のためマージ推奨だが今回は上書き
+                        if(data.categories) categories = data.categories;
+                        if(data.config) config = data.config;
+                        saveData();
+                        saveConfig();
+                        refreshUI();
+                        showToast('データを復元しました');
+                    }
+                } catch(err) {
+                    alert('ファイルが壊れているか形式が違います');
                 }
-
-                let resolved = false;
-                const timeout = setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        resolve(true);
-                    }
-                }, 1000);
-
-                window.speechSynthesis.onvoiceschanged = () => {
-                    if (!resolved) {
-                        resolved = true;
-                        clearTimeout(timeout);
-                        resolve(true);
-                    }
-                };
-
-                // 即座にgetVoicesを呼んでトリガー
-                window.speechSynthesis.getVoices();
-            });
-        }
-
-        // 最適な日本語音声を選択
-        function selectBestJapaneseVoice() {
-            const voices = window.speechSynthesis.getVoices();
-            
-            // 優先順位付きで検索
-            const priorities = [
-                v => v.lang === 'ja-JP' && v.name.includes('Google'),
-                v => v.lang === 'ja-JP' && v.name.includes('日本'),
-                v => v.lang === 'ja-JP' && !v.localService,
-                v => v.lang === 'ja-JP',
-                v => v.lang.startsWith('ja')
-            ];
-
-            for (let priority of priorities) {
-                const voice = voices.find(priority);
-                if (voice) {
-                    console.log('Selected voice:', voice.name);
-                    return voice;
-                }
-            }
-
-            return null;
-        }
-
-        function playSentence() {
-            if (sentenceStrip.length === 0) return;
-
-            // 既に再生中なら停止
-            if (isSpeaking) {
-                stopSpeech();
-                return;
-            }
-
-            // 1. 状態リセット
-            stopSpeech();
-            
-            // 2. UI更新
-            isSpeaking = true;
-            updateUIState(true);
-            showToast("おはなしします...");
-            
-            // 3. キューの準備
-            speechQueue = [...sentenceStrip];
-            currentSpeechIndex = 0;
-
-            // 4. 音声エンジン初期化後に開始
-            initSpeechEngine().then(() => {
-                // 少し待ってから開始（確実性向上）
-                setTimeout(() => {
-                    if (isSpeaking) { // 途中でキャンセルされてないか確認
-                        speakNext();
-                    }
-                }, 100);
-            });
-        }
-
-        function speakNext() {
-            // 停止されていたら終了
-            if (!isSpeaking || currentSpeechIndex >= speechQueue.length) {
-                stopSpeech();
-                clearHighlights();
-                return;
-            }
-
-            const card = speechQueue[currentSpeechIndex];
-            const index = currentSpeechIndex;
-
-            // ハイライト処理
-            clearHighlights();
-            const currentEl = document.getElementById(`strip-card-${index}`);
-            if (currentEl) currentEl.classList.add('playing-highlight');
-
-            const textToRead = card.talk || card.label;
-            const env = detectEnvironment();
-            
-            // 環境別のテキスト処理
-            let processedText = textToRead;
-            if (env.isIOS || env.isSafari) {
-                processedText = `　${textToRead}　`;
-            } else {
-                processedText = ` ${textToRead} `;
-            }
-
-            // 新しいutteranceを作成
-            currentUtterance = new SpeechSynthesisUtterance(processedText);
-            currentUtterance.lang = 'ja-JP';
-            currentUtterance.rate = 0.85; // 少し遅めで安定
-            currentUtterance.pitch = 1.0;
-            currentUtterance.volume = 1.0;
-
-            // 最適な音声を選択
-            const bestVoice = selectBestJapaneseVoice();
-            if (bestVoice) currentUtterance.voice = bestVoice;
-
-            // コールバック設定
-            let hasCompleted = false;
-            let timeoutId = null;
-
-            const moveToNext = () => {
-                if (hasCompleted) return;
-                hasCompleted = true;
-                
-                if (timeoutId) {
-                    clearTimeout(timeoutId);
-                    timeoutId = null;
-                }
-
-                currentUtterance = null;
-                
-                // 次のカードへ
-                const isPredicate = (card.category === 'cat_predicate');
-                const delay = isPredicate ? 1800 : 400;
-                
-                currentSpeechIndex++;
-                
-                setTimeout(() => {
-                    if (isSpeaking) {
-                        speakNext();
-                    }
-                }, delay);
             };
+            reader.readAsText(file);
+        }
 
-            currentUtterance.onend = () => {
-                console.log('Speech ended naturally');
-                moveToNext();
-            };
-
-            currentUtterance.onerror = (e) => {
-                console.error('Speech error:', e);
-                moveToNext();
-            };
-
-            // タイムアウト保護（15秒）
-            timeoutId = setTimeout(() => {
-                console.warn('Speech timeout - forcing next');
-                window.speechSynthesis.cancel();
-                moveToNext();
-            }, 15000);
-
-            // 再生開始
-            try {
-                // 完全にクリーンな状態から開始
-                window.speechSynthesis.cancel();
-                
-                // 少し待ってから再生
-                setTimeout(() => {
-                    if (isSpeaking && currentUtterance) {
-                        window.speechSynthesis.speak(currentUtterance);
-                        console.log('Speaking:', processedText);
-                    }
-                }, 50);
-                
-            } catch (e) {
-                console.error('Failed to speak:', e);
-                moveToNext();
+        function resetAllData() {
+            if(confirm('【警告】\nすべての自作カードや設定が消えます。\n初期状態に戻しますか？')) {
+                localStorage.removeItem(DB_KEY);
+                localStorage.removeItem(CONFIG_KEY);
+                location.reload();
             }
         }
 
-        function stopSpeech() {
-            console.log('Stopping speech');
-            isSpeaking = false;
-            speechQueue = [];
-            currentSpeechIndex = 0;
-            currentUtterance = null;
-            
-            // UI更新
-            updateUIState(false);
-            
-            // 音声停止
-            try {
-                window.speechSynthesis.cancel();
-            } catch (e) {
-                console.warn('Cancel failed:', e);
-            }
-            
-            clearHighlights();
-        }
-
-        function clearHighlights() {
-            const els = document.querySelectorAll('.strip-card');
-            els.forEach(el => el.classList.remove('playing-highlight'));
-        }
-
-        // ページ離脱・バックグラウンド時の処理
-        window.addEventListener('beforeunload', () => {
-            stopSpeech();
-        });
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && isSpeaking) {
-                stopSpeech();
-            }
-        });
-
-        // オーバーレイクリックで停止
-        document.addEventListener('DOMContentLoaded', () => {
-            const overlay = document.getElementById('speechOverlay');
-            if (overlay) {
-                overlay.addEventListener('click', () => {
-                    if (isSpeaking) {
-                        stopSpeech();
-                        showToast("停止しました");
-                    }
-                });
-            }
-        });
-
-        // --- モーダル・データ保存 ---
+        // --- カード編集モーダル ---
         function openCardModal() {
-            editingCardId = null; tempImageBase64 = null;
+            editingId = null; tempImg = null;
             document.getElementById('cardModal').classList.remove('hidden');
-            document.getElementById('cardModalTitle').innerText = "新しいカード";
+            document.getElementById('modalTitle').textContent = "新しいカード";
             document.getElementById('inputLabel').value = '';
             document.getElementById('inputTalk').value = '';
-            document.getElementById('previewBox').innerHTML = '<i class="fas fa-camera text-4xl text-blue-300 mb-2"></i><span class="text-sm text-blue-400 font-bold">ここをタップして写真を選択</span>';
-            document.getElementById('delCardBtn').classList.add('hidden');
-            setupCatSelect('cat_person');
+            document.getElementById('inputPin').checked = false;
+            
+            // プレビューリセット
+            document.getElementById('previewImg').classList.add('hidden');
+            document.getElementById('previewArea').classList.remove('hidden');
+            document.getElementById('delBtn').classList.add('hidden');
+            
+            renderCatSelect();
         }
 
         function openEditModal(id) {
             const c = cards.find(x => x.id === id);
-            editingCardId = id; tempImageBase64 = c.image;
+            editingId = id; tempImg = c.image;
             document.getElementById('cardModal').classList.remove('hidden');
-            document.getElementById('cardModalTitle').innerText = "カード編集";
+            document.getElementById('modalTitle').textContent = "カード編集";
+            
             document.getElementById('inputLabel').value = c.label;
             document.getElementById('inputTalk').value = c.talk;
-            document.getElementById('previewBox').innerHTML = `<img src="${c.image}" class="w-full h-full object-contain">`;
-            document.getElementById('delCardBtn').classList.remove('hidden');
-            setupCatSelect(c.category);
+            document.getElementById('inputPin').checked = c.pin || false;
+            
+            // プレビュー表示
+            const img = document.getElementById('previewImg');
+            img.src = c.image;
+            img.classList.remove('hidden');
+            document.getElementById('previewArea').classList.add('hidden');
+            
+            // 削除ボタン（デフォルトは削除不可にするか警告付きにするか）
+            const delBtn = document.getElementById('delBtn');
+            delBtn.classList.remove('hidden');
+            if(c.isDefault) delBtn.disabled = false; // デフォルトも消せるようにする（要望の自由度確保）
+
+            renderCatSelect(c.category);
         }
 
-        function setupCatSelect(selId) {
-            const s = document.getElementById('inputCategory');
-            s.innerHTML = categories.map(c => `<option value="${c.id}" ${c.id===selId?'selected':''}>${c.label}</option>`).join('');
+        function closeModal() {
+            document.getElementById('cardModal').classList.add('hidden');
         }
 
-        function handleImageSelect(input) {
+        function renderCatSelect(selId) {
+            const sel = document.getElementById('inputCat');
+            sel.innerHTML = categories.map(c => `<option value="${c.id}" ${c.id===selId?'selected':''}>${c.label}</option>`).join('');
+        }
+
+        function handleImage(input) {
             if(!input.files[0]) return;
             const reader = new FileReader();
-            reader.onload = (e) => {
-                resizeImage(e.target.result, (res) => {
-                    tempImageBase64 = res;
-                    document.getElementById('previewBox').innerHTML = `<img src="${res}" class="w-full h-full object-contain">`;
+            reader.onload = e => {
+                resizeImage(e.target.result, res => {
+                    tempImg = res;
+                    const img = document.getElementById('previewImg');
+                    img.src = res;
+                    img.classList.remove('hidden');
+                    document.getElementById('previewArea').classList.add('hidden');
                 });
             };
             reader.readAsDataURL(input.files[0]);
         }
 
+        // 背景白塗りつぶしリサイズ
         function resizeImage(base64, cb) {
             const img = new Image();
             img.src = base64;
             img.onload = () => {
                 const cvs = document.createElement('canvas');
-                const MAX = 500;
-                let w = img.width, h = img.height;
-                if(w>h){ if(w>MAX){ h*=MAX/w; w=MAX; } } else { if(h>MAX){ w*=MAX/h; h=MAX; } }
-                cvs.width = w; cvs.height = h;
-                
+                const MAX = 400; // 少し画質落とす
+                let w=img.width, h=img.height;
+                if(w>h){if(w>MAX){h*=MAX/w;w=MAX}}else{if(h>MAX){w*=MAX/h;h=MAX}}
+                cvs.width=w; cvs.height=h;
                 const ctx = cvs.getContext('2d');
-                // 透明部分を白で塗りつぶす
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, w, h);
-                
+                ctx.fillStyle='#FFF'; ctx.fillRect(0,0,w,h);
                 ctx.drawImage(img,0,0,w,h);
                 cb(cvs.toDataURL('image/jpeg', 0.7));
-            };
+            }
         }
 
         function saveCard() {
             const lbl = document.getElementById('inputLabel').value.trim();
             let tlk = document.getElementById('inputTalk').value.trim();
-            const cat = document.getElementById('inputCategory').value;
+            const cat = document.getElementById('inputCat').value;
+            const pin = document.getElementById('inputPin').checked;
 
-            if(!tempImageBase64) return alert('写真を選んでください');
             if(!lbl) return alert('名前を入れてください');
-
-            // ★重要：もし「読み上げ」が空なら、名前をコピーしてセットする
-            if(!tlk) tlk = lbl;
+            if(!tempImg) return alert('画像を設定してください');
+            if(!tlk) tlk = lbl; // 読み省略時は名前を使用
 
             const newData = {
-                id: editingCardId || 'c_' + Date.now(),
+                id: editingId || 'usr_' + Date.now(),
                 label: lbl,
                 talk: tlk,
                 category: cat,
-                image: tempImageBase64,
+                image: tempImg,
+                pin: pin,
+                isDefault: editingId ? (cards.find(c=>c.id===editingId)?.isDefault||false) : false,
+                useCount: editingId ? (cards.find(c=>c.id===editingId)?.useCount||0) : 0,
                 timestamp: Date.now()
             };
 
-            if(editingCardId) cards = cards.map(c => c.id === editingCardId ? newData : c);
-            else cards.push(newData);
-
+            if(editingId) {
+                cards = cards.map(c => c.id === editingId ? newData : c);
+            } else {
+                cards.push(newData);
+            }
             saveData();
-            closeModal('cardModal');
-            refreshAllUI();
-            showToast("保存しました");
+            closeModal();
+            refreshUI();
+            showToast('保存しました');
         }
 
         function deleteCard() {
-            if(confirm('本当に消しますか？')) {
-                cards = cards.filter(c => c.id !== editingCardId);
-                saveData(); closeModal('cardModal'); refreshAllUI();
-                showToast("削除しました");
+            if(confirm('このカードを削除しますか？')) {
+                cards = cards.filter(c => c.id !== editingId);
+                saveData();
+                closeModal();
+                refreshUI();
+                showToast('削除しました');
             }
         }
 
-        // --- カテゴリ管理 ---
-        function openCategoryManager() {
-            document.getElementById('categoryModal').classList.remove('hidden');
-            renderCatList();
-        }
-        function renderCatList() {
-            document.getElementById('categoryList').innerHTML = categories.map(c => `
-                <div class="flex justify-between p-3 border-b bg-gray-50 rounded mb-2 items-center">
-                    <span class="font-bold">${c.label}</span>
-                    <button onclick="delCat('${c.id}')" class="text-red-500 text-sm border border-red-200 bg-white px-2 py-1 rounded">削除</button>
-                </div>
-            `).join('');
-        }
-        function addCategory() {
-            const v = document.getElementById('newCatInput').value.trim();
-            if(!v) return;
-            categories.push({id:'cat_'+Date.now(), label:v});
-            document.getElementById('newCatInput').value = '';
-            renderCatList(); saveData(); refreshAllUI();
-        }
-        function delCat(id) {
-            if(confirm('カテゴリを削除しますか？')) {
-                categories = categories.filter(c => c.id !== id);
-                renderCatList(); saveData(); refreshAllUI();
+        // --- 音声再生（プロ仕様） ---
+        function initSpeech() {
+            if('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
             }
         }
 
-        // --- 共通 ---
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function saveData() { localStorage.setItem(DB_KEY, JSON.stringify({cards, categories})); }
-        function resetData() { if(confirm('全データを初期化しますか？')) { localStorage.removeItem(DB_KEY); location.reload(); } }
+        function playSentence() {
+            if(sentenceStrip.length === 0 || isSpeaking) return;
+
+            isSpeaking = true;
+            const btn = document.getElementById('playBtn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> じゅんび...';
+            btn.classList.add('bg-gray-500');
+
+            // エンジン起動のおまじない（無音再生）
+            window.speechSynthesis.cancel();
+            const wake = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(wake);
+
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-volume-high animate-pulse"></i> おはなし中';
+                speakRecursive(0, () => {
+                    isSpeaking = false;
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('bg-gray-500');
+                    clearHighlights();
+                });
+            }, 500);
+        }
+
+        function speakRecursive(idx, onComplete) {
+            if(idx >= sentenceStrip.length) {
+                onComplete();
+                return;
+            }
+
+            // ハイライト
+            clearHighlights();
+            const el = document.getElementById(`strip-${idx}`);
+            if(el) el.classList.add('playing-highlight');
+
+            const card = sentenceStrip[idx];
+            // モードに関わらず「音声用テキスト(talk)」を読む
+            const txt = card.talk;
+
+            const ut = new SpeechSynthesisUtterance(txt);
+            ut.lang = 'ja-JP';
+            ut.rate = 0.9;
+            
+            ut.onend = () => {
+                // 間隔調整：要求（～ください）の後は長く
+                const isReq = (card.category === 'require');
+                setTimeout(() => speakRecursive(idx+1, onComplete), isReq ? 1500 : 400);
+            };
+            ut.onerror = () => {
+                setTimeout(() => speakRecursive(idx+1, onComplete), 500);
+            };
+
+            window.speechSynthesis.speak(ut);
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.strip-item').forEach(e => e.classList.remove('playing-highlight'));
+        }
+
+        // --- ユーティリティ ---
         function showToast(msg) {
-            const box = document.getElementById('toastContainer');
+            const area = document.getElementById('toastArea');
             const el = document.createElement('div');
-            el.className = 'toast'; el.innerText = msg;
-            box.appendChild(el);
-            setTimeout(() => el.remove(), 2600);
+            el.className = 'toast';
+            el.innerHTML = msg;
+            area.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
         }
     </script>
 </body>
