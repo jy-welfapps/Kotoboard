@@ -3,7 +3,7 @@
 絵カード交換式コミュニケーションシステムのWebアプリケーションです。
 言葉でのコミュニケーションが難しい方のための、視覚的で直感的なコミュニケーションツールです。
 
-![Kotoboard Logo](Gemini_Generated_Image_544zzj544zzj544z.png)
+![Kotoboard Logo](Kotoboard_logo.png)
 
 ## ✨ 主な特徴
 
