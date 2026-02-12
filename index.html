@@ -195,6 +195,14 @@
                     </select>
                 </div>
 
+                <!-- カテゴリ管理 -->
+                <div>
+                    <label id="categoryMgmtLabel" class="text-xs font-bold text-gray-600 mb-2 block">カテゴリ管理</label>
+                    <button onclick="openCategoryModal()" id="categoryMgmtBtn" class="w-full py-2 px-3 bg-purple-50 border border-purple-300 text-purple-700 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors">
+                        <i class="fas fa-folder-plus mr-1"></i>カテゴリを編集
+                    </button>
+                </div>
+
                 <!-- データ管理 -->
                 <div>
                     <label id="dataLabel" class="text-xs font-bold text-gray-600 mb-2 block">データ管理</label>
@@ -256,6 +264,7 @@
                         <!-- カテゴリタブ -->
                         <div class="flex gap-1 mb-2 overflow-x-auto hide-scrollbar">
                             <button onclick="showEmojiCategory('smileys')" class="emoji-cat-btn px-3 py-1 text-lg rounded bg-blue-100">😊</button>
+                            <button onclick="showEmojiCategory('people')" class="emoji-cat-btn px-3 py-1 text-lg rounded">👨</button>
                             <button onclick="showEmojiCategory('animals')" class="emoji-cat-btn px-3 py-1 text-lg rounded">🐶</button>
                             <button onclick="showEmojiCategory('food')" class="emoji-cat-btn px-3 py-1 text-lg rounded">🍎</button>
                             <button onclick="showEmojiCategory('activities')" class="emoji-cat-btn px-3 py-1 text-lg rounded">⚽</button>
@@ -347,6 +356,55 @@
         </div>
     </div>
 
+    <!-- カテゴリ管理モーダル -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-end sm:items-center justify-center" onclick="if(event.target===this) closeCategoryModal()">
+        <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-500 p-4 text-white flex justify-between items-center flex-none">
+                <span id="categoryModalTitle" class="font-bold text-lg"><i class="fas fa-folder-open mr-2"></i>カテゴリ管理</span>
+                <button onclick="closeCategoryModal()" class="w-8 h-8 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-3 overflow-y-auto flex-1">
+                <!-- カテゴリリスト -->
+                <div id="categoryList" class="space-y-2"></div>
+                
+                <!-- 新規カテゴリ追加 -->
+                <div class="pt-3 border-t-2 border-gray-200">
+                    <h3 id="addCategoryTitle" class="font-bold text-sm text-gray-700 mb-2">新しいカテゴリを追加</h3>
+                    <div class="space-y-2">
+                        <div class="flex gap-2">
+                            <button type="button" onclick="openCategoryEmojiPicker()" id="newCategoryEmojiBtn" class="w-16 h-12 p-2 border-2 border-gray-300 rounded-lg text-center text-2xl bg-white hover:bg-gray-50 transition-colors">
+                                <span id="newCategoryEmojiDisplay">😊</span>
+                            </button>
+                            <input type="text" id="newCategoryName" placeholder="カテゴリ名" class="flex-1 p-2 border rounded-lg">
+                        </div>
+                        <input type="text" id="newCategoryNameChild" placeholder="ひらがな名" class="w-full p-2 border rounded-lg">
+                        
+                        <!-- 絵文字ピッカー（新規カテゴリ用） -->
+                        <div id="categoryEmojiPicker" class="hidden border-2 border-blue-300 rounded-lg p-2 bg-blue-50">
+                            <div class="flex gap-1 mb-2 overflow-x-auto hide-scrollbar">
+                                <button type="button" onclick="showCategoryEmojiCategory('smileys')" class="cat-emoji-btn px-3 py-1 text-lg rounded bg-blue-100">😊</button>
+                                <button type="button" onclick="showCategoryEmojiCategory('people')" class="cat-emoji-btn px-3 py-1 text-lg rounded">👨</button>
+                                <button type="button" onclick="showCategoryEmojiCategory('animals')" class="cat-emoji-btn px-3 py-1 text-lg rounded">🐶</button>
+                                <button type="button" onclick="showCategoryEmojiCategory('food')" class="cat-emoji-btn px-3 py-1 text-lg rounded">🍎</button>
+                                <button type="button" onclick="showCategoryEmojiCategory('activities')" class="cat-emoji-btn px-3 py-1 text-lg rounded">⚽</button>
+                                <button type="button" onclick="showCategoryEmojiCategory('travel')" class="cat-emoji-btn px-3 py-1 text-lg rounded">🚗</button>
+                                <button type="button" onclick="showCategoryEmojiCategory('objects')" class="cat-emoji-btn px-3 py-1 text-lg rounded">💡</button>
+                                <button type="button" onclick="showCategoryEmojiCategory('symbols')" class="cat-emoji-btn px-3 py-1 text-lg rounded">❤️</button>
+                            </div>
+                            <div id="categoryEmojiGrid" class="grid grid-cols-8 gap-1 max-h-40 overflow-y-auto"></div>
+                        </div>
+                        
+                        <button onclick="addNewCategory()" id="addCategoryBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-bold">
+                            <i class="fas fa-plus mr-2"></i>追加
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="importFileInput" accept=".json" onchange="handleImport(this)" class="hidden">
     <div id="toastArea"></div>
 
@@ -359,6 +417,7 @@
             {id: 'food', name: '食事', nameChild: 'しょくじ', emoji: '🍎', color: 'cat-food'},
             {id: 'play', name: '遊び', nameChild: 'あそび', emoji: '⚽', color: 'cat-play'},
             {id: 'feeling', name: '気持ち', nameChild: 'きもち', emoji: '😊', color: 'cat-feeling'},
+            {id: 'people', name: '人物', nameChild: 'ひと', emoji: '👨‍👩‍👧‍👦', color: 'cat-other'},
             {id: 'color', name: '色', nameChild: 'いろ', emoji: '🎨', color: 'cat-color'},
             {id: 'other', name: 'その他', nameChild: 'そのた', emoji: '📦', color: 'cat-other'}
         ];
@@ -379,6 +438,7 @@
         // 絵文字データベース
         const emojiDatabase = {
             smileys: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'],
+            people: ['👨','👩','👶','👧','👦','👴','👵','👨‍⚕️','👩‍⚕️','👨‍🎓','👩‍🎓','👨‍🏫','👩‍🏫','👨‍⚖️','👩‍⚖️','👨‍🌾','👩‍🌾','👨‍🍳','👩‍🍳','👨‍🔧','👩‍🔧','👨‍🏭','👩‍🏭','👨‍💼','👩‍💼','👨‍🔬','👩‍🔬','👨‍💻','👩‍💻','👨‍🎤','👩‍🎤','👨‍🎨','👩‍🎨','👨‍✈️','👩‍✈️','👨‍🚀','👩‍🚀','👨‍🚒','👩‍🚒','👮','👮‍♂️','👮‍♀️','🕵️','🕵️‍♂️','🕵️‍♀️','💂','💂‍♂️','💂‍♀️','👷','👷‍♂️','👷‍♀️','🤴','👸','👳','👳‍♂️','👳‍♀️','👲','🧕','🤵','🤵‍♂️','🤵‍♀️','👰','👰‍♂️','👰‍♀️','🤰','🤱','👼','🎅','🤶','🦸','🦸‍♂️','🦸‍♀️','🦹','🦹‍♂️','🦹‍♀️','🧙','🧙‍♂️','🧙‍♀️','🧚','🧚‍♂️','🧚‍♀️','🧛','🧛‍♂️','🧛‍♀️','🧜','🧜‍♂️','🧜‍♀️','🧝','🧝‍♂️','🧝‍♀️','🧞','🧞‍♂️','🧞‍♀️','🧟','🧟‍♂️','🧟‍♀️','💆','💆‍♂️','💆‍♀️','💇','💇‍♂️','💇‍♀️','🚶','🚶‍♂️','🚶‍♀️','🧍','🧍‍♂️','🧍‍♀️','🧎','🧎‍♂️','🧎‍♀️','🏃','🏃‍♂️','🏃‍♀️','👨‍👩‍👧','👨‍👩‍👧‍👦','👨‍👩‍👦‍👦','👨‍👩‍👧‍👧','👨‍👦','👨‍👦‍👦','👨‍👧','👨‍👧‍👦','👨‍👧‍👧','👩‍👦','👩‍👦‍👦','👩‍👧','👩‍👧‍👦','👩‍👧‍👧','🗣️','👤','👥','👣'],
             animals: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🕸️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔'],
             food: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🌽','🥕','🫑','🥗','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊'],
             activities: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🪗','🎸','🪕','🎻','🎲','♟️','🎯','🎳','🎮','🎰','🧩'],
@@ -388,6 +448,9 @@
         };
 
         let currentEmojiCategory = 'smileys';
+        let currentCategoryEmojiCategory = 'smileys';
+        let selectedCategoryEmoji = '😊';
+        let editingCategoryIndex = -1;
 
         function initCanvas() {
             canvas = document.getElementById('drawCanvas');
@@ -447,6 +510,50 @@
                 btn.classList.remove('bg-blue-100');
             });
             event.target.classList.add('bg-blue-100');
+        }
+
+        // カテゴリ絵文字ピッカー関連
+        function openCategoryEmojiPicker() {
+            const picker = document.getElementById('categoryEmojiPicker');
+            if(picker.classList.contains('hidden')) {
+                picker.classList.remove('hidden');
+                showCategoryEmojiCategory('smileys');
+            } else {
+                picker.classList.add('hidden');
+            }
+        }
+
+        function showCategoryEmojiCategory(category) {
+            currentCategoryEmojiCategory = category;
+            const grid = document.getElementById('categoryEmojiGrid');
+            const emojis = emojiDatabase[category] || [];
+            
+            grid.innerHTML = emojis.map(emoji => 
+                `<button type="button" onclick="setCategoryEmoji('${emoji}')" class="text-2xl p-2 hover:bg-gray-100 rounded transition-colors">${emoji}</button>`
+            ).join('');
+
+            // カテゴリボタンのハイライト
+            document.querySelectorAll('.cat-emoji-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100');
+            });
+            event.target.classList.add('bg-blue-100');
+        }
+
+        function setCategoryEmoji(emoji) {
+            selectedCategoryEmoji = emoji;
+            document.getElementById('newCategoryEmojiDisplay').textContent = emoji;
+            document.getElementById('categoryEmojiPicker').classList.add('hidden');
+        }
+
+        function openEditCategoryEmojiPicker(index) {
+            editingCategoryIndex = index;
+            const cat = categories[index];
+            selectedCategoryEmoji = cat.emoji;
+            
+            // 編集用のモーダルを表示（シンプルなpromptの代わり）
+            const picker = document.getElementById('categoryEmojiPicker');
+            picker.classList.remove('hidden');
+            showCategoryEmojiCategory('smileys');
         }
 
         // 初期化
@@ -515,6 +622,17 @@
                 {kanji: '怒った', hiragana: 'おこった', talk: '怒っています', emoji: '😠', category: 'feeling'},
                 {kanji: 'こわい', hiragana: 'こわい', talk: '怖いです', emoji: '😨', category: 'feeling'},
                 
+                // 人物カテゴリ
+                {kanji: 'お母さん', hiragana: 'おかあさん', talk: 'お母さん', emoji: '👩', category: 'people'},
+                {kanji: 'お父さん', hiragana: 'おとうさん', talk: 'お父さん', emoji: '👨', category: 'people'},
+                {kanji: 'おばあちゃん', hiragana: 'おばあちゃん', talk: 'おばあちゃん', emoji: '👵', category: 'people'},
+                {kanji: 'おじいちゃん', hiragana: 'おじいちゃん', talk: 'おじいちゃん', emoji: '👴', category: 'people'},
+                {kanji: '先生', hiragana: 'せんせい', talk: '先生', emoji: '👨‍🏫', category: 'people'},
+                {kanji: '赤ちゃん', hiragana: 'あかちゃん', talk: '赤ちゃん', emoji: '👶', category: 'people'},
+                {kanji: 'ともだち', hiragana: 'ともだち', talk: '友達', emoji: '👦', category: 'people'},
+                {kanji: 'おにいちゃん', hiragana: 'おにいちゃん', talk: 'お兄ちゃん', emoji: '👦', category: 'people'},
+                {kanji: 'おねえちゃん', hiragana: 'おねえちゃん', talk: 'お姉ちゃん', emoji: '👧', category: 'people'},
+                
                 // 色カテゴリ（充実化）
                 {kanji: '赤い', hiragana: 'あかい', talk: '赤い', emoji: '🔴', category: 'color'},
                 {kanji: '青い', hiragana: 'あおい', talk: '青い', emoji: '🔵', category: 'color'},
@@ -539,6 +657,217 @@
                 });
             });
             saveData();
+        }
+
+        // カテゴリ管理
+        function openCategoryModal() {
+            document.getElementById('settingsPanel').classList.add('hidden');
+            renderCategoryList();
+            document.getElementById('categoryModal').classList.remove('hidden');
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.add('hidden');
+        }
+
+        function renderCategoryList() {
+            const list = document.getElementById('categoryList');
+            const isChild = currentMode === 'child';
+            
+            list.innerHTML = categories.map((cat, index) => {
+                const isDefault = ['require', 'life', 'food', 'play', 'feeling', 'people', 'color', 'other'].includes(cat.id);
+                const cardCount = cards.filter(c => c.category === cat.id).length;
+                
+                return `
+                    <div class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                        <button onclick="event.stopPropagation(); ${!isDefault ? `editCategoryEmoji(${index})` : 'void(0)'}" class="text-2xl ${!isDefault ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'}">${cat.emoji}</button>
+                        <div class="flex-1">
+                            <div class="font-bold">${isChild ? cat.nameChild : cat.name}</div>
+                            <div class="text-xs text-gray-500">${cardCount}${isChild ? 'まい' : '枚'}のカード</div>
+                        </div>
+                        <div class="flex gap-1">
+                            ${!isDefault ? `
+                                <button onclick="editCategoryText(${index})" class="w-8 h-8 bg-white hover:bg-blue-50 rounded-full flex items-center justify-center transition-colors">
+                                    <i class="fas fa-edit text-blue-600 text-sm"></i>
+                                </button>
+                                <button onclick="deleteCategory(${index})" class="w-8 h-8 bg-white hover:bg-red-50 rounded-full flex items-center justify-center transition-colors">
+                                    <i class="fas fa-trash text-red-600 text-sm"></i>
+                                </button>
+                            ` : `
+                                <span class="text-xs text-gray-400 px-2">${isChild ? 'きほん' : 'デフォルト'}</span>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addNewCategory() {
+            const emoji = selectedCategoryEmoji;
+            const name = document.getElementById('newCategoryName').value.trim();
+            const nameChild = document.getElementById('newCategoryNameChild').value.trim();
+            
+            if(!emoji || !name || !nameChild) {
+                alert(currentMode === 'child' ? 'ぜんぶいれてね' : 'すべて入力してください');
+                return;
+            }
+
+            const id = 'custom_' + Date.now();
+            categories.push({
+                id: id,
+                name: name,
+                nameChild: nameChild,
+                emoji: emoji,
+                color: 'cat-other'
+            });
+
+            saveData();
+            renderCategoryList();
+            renderCategoryBar();
+            
+            // 入力欄をクリア
+            selectedCategoryEmoji = '😊';
+            document.getElementById('newCategoryEmojiDisplay').textContent = '😊';
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newCategoryNameChild').value = '';
+            document.getElementById('categoryEmojiPicker').classList.add('hidden');
+            
+            showToast('✨ カテゴリを追加しました');
+        }
+
+        function editCategoryEmoji(index) {
+            const isChild = currentMode === 'child';
+            
+            // 絵文字ピッカーを表示して選択
+            editingCategoryIndex = index;
+            selectedCategoryEmoji = categories[index].emoji;
+            
+            // カスタムモーダル作成
+            const modal = document.createElement('div');
+            modal.id = 'tempEmojiModal';
+            modal.className = 'fixed inset-0 bg-black/60 z-50 flex items-center justify-center';
+            modal.innerHTML = `
+                <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl m-4">
+                    <div class="bg-gradient-to-r from-purple-600 to-purple-500 p-4 text-white flex justify-between items-center">
+                        <span class="font-bold">${isChild ? 'えもじをえらぶ' : '絵文字を選択'}</span>
+                        <button onclick="closeTempEmojiModal()" class="w-8 h-8 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="mb-3 text-center">
+                            <div class="text-5xl mb-2" id="tempEmojiDisplay">${categories[index].emoji}</div>
+                            <div class="text-sm text-gray-600">${isChild ? 'えもじをタップしてね' : '絵文字をタップして選択'}</div>
+                        </div>
+                        <div class="flex gap-1 mb-2 overflow-x-auto hide-scrollbar">
+                            <button onclick="showTempEmojiCategory('smileys')" class="temp-emoji-btn px-3 py-1 text-lg rounded bg-blue-100">😊</button>
+                            <button onclick="showTempEmojiCategory('people')" class="temp-emoji-btn px-3 py-1 text-lg rounded">👨</button>
+                            <button onclick="showTempEmojiCategory('animals')" class="temp-emoji-btn px-3 py-1 text-lg rounded">🐶</button>
+                            <button onclick="showTempEmojiCategory('food')" class="temp-emoji-btn px-3 py-1 text-lg rounded">🍎</button>
+                            <button onclick="showTempEmojiCategory('activities')" class="temp-emoji-btn px-3 py-1 text-lg rounded">⚽</button>
+                            <button onclick="showTempEmojiCategory('travel')" class="temp-emoji-btn px-3 py-1 text-lg rounded">🚗</button>
+                            <button onclick="showTempEmojiCategory('objects')" class="temp-emoji-btn px-3 py-1 text-lg rounded">💡</button>
+                            <button onclick="showTempEmojiCategory('symbols')" class="temp-emoji-btn px-3 py-1 text-lg rounded">❤️</button>
+                        </div>
+                        <div id="tempEmojiGrid" class="grid grid-cols-8 gap-1 max-h-60 overflow-y-auto mb-3"></div>
+                        <button onclick="saveCategoryEmoji()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-bold">
+                            ${isChild ? 'けってい' : '決定'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            showTempEmojiCategory('smileys');
+        }
+
+        function showTempEmojiCategory(category) {
+            const grid = document.getElementById('tempEmojiGrid');
+            const emojis = emojiDatabase[category] || [];
+            
+            grid.innerHTML = emojis.map(emoji => 
+                `<button onclick="selectTempEmoji('${emoji}')" class="text-2xl p-2 hover:bg-gray-100 rounded transition-colors">${emoji}</button>`
+            ).join('');
+
+            document.querySelectorAll('.temp-emoji-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100');
+            });
+            event.target.classList.add('bg-blue-100');
+        }
+
+        function selectTempEmoji(emoji) {
+            selectedCategoryEmoji = emoji;
+            document.getElementById('tempEmojiDisplay').textContent = emoji;
+        }
+
+        function saveCategoryEmoji() {
+            if(editingCategoryIndex >= 0) {
+                categories[editingCategoryIndex].emoji = selectedCategoryEmoji;
+                saveData();
+                renderCategoryList();
+                renderCategoryBar();
+                showToast('✏️ 絵文字を変更しました');
+            }
+            closeTempEmojiModal();
+        }
+
+        function closeTempEmojiModal() {
+            const modal = document.getElementById('tempEmojiModal');
+            if(modal) modal.remove();
+            editingCategoryIndex = -1;
+        }
+
+        function editCategoryText(index) {
+            const cat = categories[index];
+            const isChild = currentMode === 'child';
+            
+            const name = prompt(isChild ? 'かんじめいをいれてね' : '漢字名を入力:', cat.name);
+            if(name === null) return;
+            
+            const nameChild = prompt(isChild ? 'ひらがなめいをいれてね' : 'ひらがな名を入力:', cat.nameChild);
+            if(nameChild === null) return;
+            
+            if(name.trim() && nameChild.trim()) {
+                categories[index].name = name.trim();
+                categories[index].nameChild = nameChild.trim();
+                
+                saveData();
+                renderCategoryList();
+                renderCategoryBar();
+                showToast('✏️ カテゴリ名を編集しました');
+            }
+        }
+
+        function deleteCategory(index) {
+            const cat = categories[index];
+            const cardCount = cards.filter(c => c.category === cat.id).length;
+            const isChild = currentMode === 'child';
+            
+            let msg = isChild ? 
+                `${cat.nameChild}をけすの？` : 
+                `${cat.name}を削除しますか？`;
+            
+            if(cardCount > 0) {
+                msg += isChild ? 
+                    `\n\n${cardCount}まいのかーどは「そのた」にうつされます` : 
+                    `\n\n${cardCount}枚のカードは「その他」に移動されます`;
+            }
+            
+            if(!confirm(msg)) return;
+            
+            // カテゴリのカードを「その他」に移動
+            cards.forEach(card => {
+                if(card.category === cat.id) {
+                    card.category = 'other';
+                }
+            });
+            
+            categories.splice(index, 1);
+            saveData();
+            renderCategoryList();
+            renderCategoryBar();
+            renderCards();
+            
+            showToast('🗑️ カテゴリを削除しました');
         }
 
         // UI更新
@@ -579,6 +908,13 @@
             document.getElementById('exportAllBtn').innerHTML = isChild ? '<i class="fas fa-globe mr-2"></i>ぜんぶのかーど' : '<i class="fas fa-globe mr-2"></i>すべてのカード';
             document.getElementById('exportPinnedBtn').innerHTML = isChild ? '<i class="fas fa-star mr-2"></i>ぴんどめのみ' : '<i class="fas fa-star mr-2"></i>ピン留めのみ';
             document.getElementById('exportCategoryBtn').innerHTML = isChild ? '<i class="fas fa-folder mr-2"></i>せんたくかてごり' : '<i class="fas fa-folder mr-2"></i>選択カテゴリ';
+            
+            // カテゴリ管理
+            document.getElementById('categoryMgmtLabel').textContent = isChild ? 'かてごりかんり' : 'カテゴリ管理';
+            document.getElementById('categoryMgmtBtn').innerHTML = isChild ? '<i class="fas fa-folder-plus mr-1"></i>かてごりをへんしゅう' : '<i class="fas fa-folder-plus mr-1"></i>カテゴリを編集';
+            document.getElementById('categoryModalTitle').innerHTML = isChild ? '<i class="fas fa-folder-open mr-2"></i>かてごりかんり' : '<i class="fas fa-folder-open mr-2"></i>カテゴリ管理';
+            document.getElementById('addCategoryTitle').textContent = isChild ? 'あたらしいかてごりをついか' : '新しいカテゴリを追加';
+            document.getElementById('addCategoryBtn').innerHTML = isChild ? '<i class="fas fa-plus mr-2"></i>ついか' : '<i class="fas fa-plus mr-2"></i>追加';
 
             // Buy Me a Coffeeボタンの表示/非表示
             const coffeeSection = document.getElementById('coffeeSection');
